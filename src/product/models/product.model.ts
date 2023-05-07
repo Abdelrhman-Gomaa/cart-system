@@ -1,28 +1,30 @@
+import { Field, ID, ObjectType } from '@nestjs/graphql';
 import { ApiProperty } from '@nestjs/swagger';
 import { PrimaryKey, Default, DataType, Column, Model, Table, CreatedAt, UpdatedAt } from 'sequelize-typescript';
 
 @Table
+@ObjectType()
 export class Product extends Model{
     @PrimaryKey
     @Default(DataType.UUIDV4)
     @Column({ type: DataType.UUID })
-    @ApiProperty()
+    @Field(() => ID)
     id: string;
 
     @Column(DataType.STRING)
-    @ApiProperty()
+    @Field()
     title: string;
 
     @Column(DataType.STRING)
-    @ApiProperty()
+    @Field()
     description: string;
 
     @Column(DataType.INTEGER)
-    @ApiProperty()
+    @Field()
     count: number;
 
     @Column(DataType.INTEGER)
-    @ApiProperty()
+    @Field()
     price: number;
 
     @CreatedAt
