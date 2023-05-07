@@ -10,27 +10,27 @@ export class ProductResolver {
   constructor(private readonly productService: ProductService) { }
 
   @Mutation(() => Product)
-  create(@Args('input') input: CreateProductInput) {
+  createProduct(@Args('input') input: CreateProductInput) {
     return this.productService.createProduct(input);
   }
 
   @Query(() => [Product])
-  findAll() {
+  findAllProduct() {
     return this.productService.findAllProduct();
   }
 
   @Query(() => Product)
-  findOne(@Param('id') id: string) {
+  findOneProduct(@Args('id') id: string) {
     return this.productService.findOneProduct(id);
   }
 
   @Mutation(() => Product)
-  update(@Param('id') id: string, @Args('input')  input: UpdateProductInput) {
-    return this.productService.updateProduct(id, input);
+  updateProduct(@Args('input') input: UpdateProductInput) {
+    return this.productService.updateProduct(input);
   }
 
   @Mutation(() => Product)
-  remove(@Args('input') id: string) {
+  removeProduct(@Args('id') id: string) {
     return this.productService.removeProduct(id);
   }
 }

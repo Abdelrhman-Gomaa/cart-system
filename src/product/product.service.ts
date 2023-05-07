@@ -23,8 +23,8 @@ export class ProductService {
     return await this.productRepo.findAll({ where: { id } });
   }
 
-  async updateProduct(id: string, input: UpdateProductInput) {
-    return await this.productRepo.update({ ...input }, { where: { id } });
+  async updateProduct(input: UpdateProductInput) {
+    return await this.productRepo.update({ ...input }, { where: { id: input.productId } });
   }
 
   async removeProduct(id: string) {
