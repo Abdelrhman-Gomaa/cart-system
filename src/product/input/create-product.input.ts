@@ -1,20 +1,22 @@
+import { Field, InputType } from '@nestjs/graphql';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNumber, IsString } from 'class-validator';
 
+@InputType()
 export class CreateProductInput {
     @IsString()
-    @ApiProperty()
+    @Field()
     title: string;
 
     @IsString()
-    @ApiProperty()
+    @Field()
     description: string;
 
     @IsNumber()
-    @ApiProperty()
+    @Field()
     count: number;
 
     @IsNumber()
-    @ApiProperty()
+    @Field()
     price: number;
 }
