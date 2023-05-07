@@ -1,4 +1,5 @@
 import { Sequelize } from "sequelize-typescript";
+import { Cart } from 'src/cart/model/cart.model';
 import { Invoice } from 'src/invoice/models/invoice.model';
 import { Product } from 'src/product/models/product.model';
 import { UserSocialAccount } from 'src/user/models/user-social-account.model';
@@ -20,7 +21,7 @@ export const databaseProviders = [
           timestamps: false
         },
       });
-      sequelize.addModels([User, UserSocialAccount, UserVerificationCode, Product, Invoice]);
+      sequelize.addModels([User, UserSocialAccount, UserVerificationCode, Product, Invoice, Cart]);
 
       sequelize.authenticate()
         .then(() => {
