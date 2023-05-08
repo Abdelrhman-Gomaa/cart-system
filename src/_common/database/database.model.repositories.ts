@@ -4,4 +4,5 @@ export enum Repositories {
     UserVerificationCodesRepository = 'UserVerificationCodesRepository',
     ProductsRepository = 'ProductsRepository',
     InvoicesRepository = 'InvoicesRepository',
+    CartsRepository = 'CartsRepository',
 }
