@@ -14,7 +14,7 @@ export class ItemInfoType {
     quantity: string;
 
     @Field()
-    totalUnitPrice: boolean;
+    totalUnitPrice: number;
 }
 
 @ObjectType()
