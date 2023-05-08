@@ -9,6 +9,7 @@ import { MailModule } from './_common/mail/mail.module';
 import { NestBullModule } from './_common/bull/bull.module';
 import { ProductModule } from './product/product.module';
 import { InvoiceModule } from './invoice/invoice.module';
+import { CartModule } from './cart/cart.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { InvoiceModule } from './invoice/invoice.module';
     NestBullModule,
     ProductModule,
     InvoiceModule,
+    CartModule,
   ],
   controllers: [],
   providers: [],
