@@ -129,11 +129,11 @@ export class UserService {
             verificationCode: input.verificationCode
         });
         await this.errorIfOtherUserHasSameVerifiedEmail(input.email, user.id);
-        await this.userVerificationCodeService.deleteVerificationCodeAndUpdateUserModel(
+        const updateUser = await this.userVerificationCodeService.deleteVerificationCodeAndUpdateUserModel(
             { user, useCase: UserVerificationCodeUseCaseEnum.EMAIL_VERIFICATION },
             { verifiedEmail: input.email, unVerifiedEmail: null }
         );
-        return this.appendAuthTokenToUser(user);
+        return this.appendAuthTokenToUser(updateUser);
     }
 
     private async errorIfOtherUserHasSameVerifiedEmail(email: string, currentUserId: string) {
