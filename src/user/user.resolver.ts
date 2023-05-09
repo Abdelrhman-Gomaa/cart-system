@@ -8,6 +8,7 @@ import { CurrentUser } from 'src/auth/auth-user.decorator';
 import { CreateUserInput } from './input/create.user.input';
 import { LoginUserInput } from './input/login.user.input';
 import { SendSocialAccountVerificationCodeInput } from './input/send-social-account-code';
+import { VerifyUserByEmailInput } from './input/verify-user-by-email.input';
 
 @Resolver('Auth')
 export class UserResolver {
@@ -35,6 +36,11 @@ export class UserResolver {
   @Mutation(() => User)
   async emailAndPasswordLogin(@Args('input') input: LoginUserInput) {
     return await this.userService.signIn(input);
+  }
+
+  @Mutation(returns => User)
+  async verifyUserByEmail(@Args('input') input: VerifyUserByEmailInput) {
+    return await this.userService.verifyUserByEmail(input);
   }
 
   @Mutation(() => User)

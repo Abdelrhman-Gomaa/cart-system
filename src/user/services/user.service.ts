@@ -11,15 +11,18 @@ import { BaseHttpException } from 'src/_common/exceptions/base-http-exception';
 import { ErrorCodeEnum } from 'src/_common/exceptions/error-code.enum';
 import { ChangePasswordInput } from '../input/change.password.input';
 import { UserByEmailBasedOnUseCaseOrErrorInput } from '../user.interface';
-import {  UserVerificationCodeUseCaseEnum } from '../user.enum';
+import { LangEnum, UserVerificationCodeUseCaseEnum } from '../user.enum';
 import { generate } from 'voucher-code-generator';
 import * as slug from 'speakingurl';
+import { UserVerificationCodeService } from './user-verification-code.service';
+import { VerifyUserByEmailInput } from '../input/verify-user-by-email.input';
 
 @Injectable()
 export class UserService {
     constructor(
         @Inject(Repositories.UsersRepository)
         private readonly userRepo: typeof User,
+        private readonly userVerificationCodeService: UserVerificationCodeService,
     ) { }
 
     async findAll() {
@@ -33,20 +36,21 @@ export class UserService {
     }
 
     async register(input: CreateUserInput) {
+        await this.deleteDuplicatedUsersAtUnVerifiedEmail(input.email);
         const existUser = await this.userRepo.findOne({
             where: {
                 [Op.or]: [{ userName: input.userName }, { verifiedEmail: input.email }]
             }
         });
         if (existUser) throw new BaseHttpException(ErrorCodeEnum.USER_ALREADY_EXIST);
-        await this.deleteDuplicatedUsersAtUnVerifiedEmail(input.email);
 
         const salt = await bcrypt.genSalt();
         const password = input.password;
         const hashPassword = await bcrypt.hash(password, salt);
 
         try {
-            return await this.userRepo.create({
+            const { email } = input;
+            const user = await this.userRepo.create({
                 firstName: input.firstName,
                 lastName: input.lastName,
                 fullName: `${input.firstName} ${input.lastName}`,
@@ -57,6 +61,16 @@ export class UserService {
                 phone: input.phone,
                 gender: input.gender
             });
+            await this.userVerificationCodeService.sendEmailVerificationCode(
+                user.id,
+                {
+                    favLang: LangEnum.EN,
+                    email,
+                    useCase: UserVerificationCodeUseCaseEnum.EMAIL_VERIFICATION
+                },
+                'App Account Verification'
+            );
+            return user;
         } catch (error) {
             console.log(error.message);
         }
@@ -65,7 +79,6 @@ export class UserService {
 
     async signIn(input: LoginUserInput): Promise<{ accessToken: string; }> {
         const user = await this.validationUserPassword(input);
-        console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>', user);
         if (!user) {
             throw new UnauthorizedException('Invalid Credentials');
         }
@@ -105,22 +118,38 @@ export class UserService {
         });
     }
 
+    public async verifyUserByEmail(input: VerifyUserByEmailInput): Promise<User> {
+        const user = await this.userVerificationCodeService.userByEmailBasedOnUseCaseOrError({
+            email: input.email,
+            useCase: UserVerificationCodeUseCaseEnum.EMAIL_VERIFICATION
+        });
+        await this.userVerificationCodeService.validVerificationCodeOrError({
+            user,
+            useCase: UserVerificationCodeUseCaseEnum.EMAIL_VERIFICATION,
+            verificationCode: input.verificationCode
+        });
+        await this.errorIfOtherUserHasSameVerifiedEmail(input.email, user.id);
+        await this.userVerificationCodeService.deleteVerificationCodeAndUpdateUserModel(
+            { user, useCase: UserVerificationCodeUseCaseEnum.EMAIL_VERIFICATION },
+            { verifiedEmail: input.email, unVerifiedEmail: null }
+        );
+        return this.appendAuthTokenToUser(user);
+    }
+
+    private async errorIfOtherUserHasSameVerifiedEmail(email: string, currentUserId: string) {
+        const otherUser = await this.userRepo.findOne({
+            where: {
+                verifiedEmail: email,
+                id: { [Op.ne]: currentUserId }
+            }
+        });
+        if (otherUser) throw new BaseHttpException(ErrorCodeEnum.EMAIL_ALREADY_EXISTS);
+    }
+
     async userByEmailBasedOnUseCaseOrError(input: UserByEmailBasedOnUseCaseOrErrorInput) {
         return input.useCase === UserVerificationCodeUseCaseEnum.EMAIL_VERIFICATION
-            ? await this.userByNotVerifiedEmailOrError(input.email)
-            : await this.userByVerifiedEmailOrError(input.email);
-    }
-
-    async userByNotVerifiedEmailOrError(email: string) {
-        const user = await this.userRepo.findOne({ where: { unVerifiedEmail: email } });
-        if (!user) throw new BaseHttpException(ErrorCodeEnum.USER_DOES_NOT_EXIST);
-        return user;
-    }
-
-    async userByVerifiedEmailOrError(email: string) {
-        const user = await this.userRepo.findOne({ where: { verifiedEmail: email } });
-        if (!user) throw new BaseHttpException(ErrorCodeEnum.USER_DOES_NOT_EXIST);
-        return user;
+            ? await this.userVerificationCodeService.userByNotVerifiedEmailOrError(input.email)
+            : await this.userVerificationCodeService.userByVerifiedEmailOrError(input.email);
     }
 
     private async validationUserPassword(input: LoginUserInput) {

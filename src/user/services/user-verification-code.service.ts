@@ -12,11 +12,11 @@ import { ErrorCodeEnum } from '../../_common/exceptions/error-code.enum';
 import { UserVerificationCode } from '../models/user-verification-code.model';
 import { BaseHttpException } from '../../_common/exceptions/base-http-exception';
 import { Repositories } from 'src/_common/database/database.model.repositories';
-import { UserService } from './user.service';
 import { getEmailMsg } from 'src/_common/utils/mail-msg';
 import { SendEmailVerificationCodeInput } from '../input/send-email-verification.input';
 import { Queue } from 'bull';
 import { InjectQueue } from '@nestjs/bull';
+import { Op } from 'sequelize';
 
 @Injectable()
 export class UserVerificationCodeService {
@@ -25,7 +25,6 @@ export class UserVerificationCodeService {
     private readonly userVerificationCodeRepo: typeof UserVerificationCode,
     @Inject(Repositories.UsersRepository)
     private readonly userRepo: typeof User,
-    private readonly userService: UserService,
     @Inject('SEQUELIZE') private readonly sequelize: Sequelize,
     @InjectQueue('mail-otp') private readonly mailQueue: Queue
   ) { }
@@ -49,7 +48,7 @@ export class UserVerificationCodeService {
     }, {
       delay: 1000
     });
-    return true
+    return true;
   }
 
   public async userByEmailBasedOnUseCaseOrError(
@@ -57,20 +56,24 @@ export class UserVerificationCodeService {
   ): Promise<User> {
     switch (input.useCase) {
       case UserVerificationCodeUseCaseEnum.PASSWORD_RESET:
-        return await this.userService.userByVerifiedEmailOrError(input.email);
+        return await this.userByVerifiedEmailOrError(input.email);
 
       case UserVerificationCodeUseCaseEnum.EMAIL_VERIFICATION:
-        return await this.userService.userByNotVerifiedEmailOrError(input.email);
+        return await this.userByNotVerifiedEmailOrError(input.email);
     }
   }
 
-  public validVerificationCodeOrError(input: ValidVerificationCodeOrErrorInput): void {
-    const verificationCode = input.user.userVerificationCodes.find(
-      obj => obj.code === input.verificationCode && obj.useCase === input.useCase
-    );
+  public async validVerificationCodeOrError(input: ValidVerificationCodeOrErrorInput) {
+    const verificationCode = await this.userVerificationCodeRepo.findOne({
+      where: {
+        userId: input.user.id,
+        code: input.verificationCode
+      }
+    });
     if (!verificationCode) throw new BaseHttpException(ErrorCodeEnum.VERIFICATION_CODE_NOT_EXIST);
     if (verificationCode.expiryDate < new Date())
       throw new BaseHttpException(ErrorCodeEnum.EXPIRED_VERIFICATION_CODE);
+    return true;
   }
 
   public async deleteVerificationCodeAndUpdateUserModel(
@@ -88,11 +91,11 @@ export class UserVerificationCodeService {
         {
           ...fieldsWillUpdated,
         }, {
-        where: { userId: input.user.id },
+        where: { id: input.user.id },
         transaction
       }
       );
-      return await this.userRepo.findOne({ where: { userId: input.user.id } });
+      return await this.userRepo.findOne({ where: { id: input.user.id }, transaction });
     });
   }
 
@@ -134,5 +137,17 @@ export class UserVerificationCodeService {
     firstName?: string
   ): string {
     return getEmailMsg(verificationCode, favLang, useCase, firstName);
+  }
+
+  async userByNotVerifiedEmailOrError(email: string) {
+    const user = await this.userRepo.findOne({ where: { unVerifiedEmail: email } });
+    if (!user) throw new BaseHttpException(ErrorCodeEnum.USER_DOES_NOT_EXIST);
+    return user;
+  }
+
+  async userByVerifiedEmailOrError(email: string) {
+    const user = await this.userRepo.findOne({ where: { verifiedEmail: email } });
+    if (!user) throw new BaseHttpException(ErrorCodeEnum.USER_DOES_NOT_EXIST);
+    return user;
   }
 }
