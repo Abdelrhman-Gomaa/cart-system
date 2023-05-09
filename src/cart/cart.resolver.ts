@@ -10,7 +10,7 @@ export class CartResolver {
     ) { }
 
     @Mutation(() => Cart)
-    async createCart(@Args('input') input: CreateCartInput){
-        return await this.cartService.createCart(input)
+    async createCart(@Args('input') input: CreateCartInput) {
+        return await this.cartService.createCart(input);
     }
 }

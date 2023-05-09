@@ -18,20 +18,32 @@ export class CartService {
         private readonly itemRepo: typeof Product,
     ) { }
 
-    async createCart(input: CreateCartInput){
-        if(!input.userId && !input.contextInfo){
-            throw new BaseHttpException(ErrorCodeEnum.CANNOT_CREATE_CART_WITHOUT_CONTEXT_OR_USER)
+    async createCart(input: CreateCartInput) {
+        if (!input.userId && !input.contextInfo) {
+            throw new BaseHttpException(ErrorCodeEnum.CANNOT_CREATE_CART_WITHOUT_CONTEXT_OR_USER);
         }
-        // to create cart -> can create cart with userid or context
-        // first check input.userid is exist
-        if(input.userId)
-        {
-            const user = await this.userRepo.findOne({where: {id: input.userId}})
-            if(!user) throw new BaseHttpException(ErrorCodeEnum.INVALID_USER)
+        if (input.userId) {
+            const user = await this.userRepo.findOne({ where: { id: input.userId } });
+            if (!user) throw new BaseHttpException(ErrorCodeEnum.INVALID_USER);
+            const cart = await this.cartRepo.findOne({ where: { userId: input.userId } });
+            if (cart) throw new BaseHttpException(ErrorCodeEnum.USER_CANNOT_CREATE_MORE_THAN_ONE_CART);
         }
-        let productIds = []
-        if(input.ItemInfo)
-            productIds= input?.ItemInfo.map(product => product.productId);
+        if (input.contextInfo) {
+            if (!input.contextInfo.agent || !input.contextInfo.device || !input.contextInfo.ip)
+                throw new BaseHttpException(ErrorCodeEnum.MUST_ENTERED_ALL_CONTEXT_INFO);
+            const cart = await this.cartRepo.findAll({ where: { contextInfo: input.contextInfo } });
+            cart.map(item => {
+                if (item) {
+                    if (input.userId && item.userId === input.userId)
+                        throw new BaseHttpException(ErrorCodeEnum.USER_CANNOT_CREATE_MORE_THAN_ONE_CART);
+                    if (!input.userId && !item.userId)
+                        throw new BaseHttpException(ErrorCodeEnum.DEVICE_HAS_ONE_CART);
+                }
+            });
+        }
+        let productIds = [];
+        if (input.ItemInfo)
+            productIds = input?.ItemInfo.map(product => product.productId);
         const existingProducts = await this.itemRepo.findAll({ where: { id: productIds } });
         if (!existingProducts) throw new BaseHttpException(ErrorCodeEnum.INVALID_PRODUCT);
         let itemMapping = existingProducts?.map(product => {
@@ -59,6 +71,6 @@ export class CartService {
                 discountPrice: 0,
                 finalPrice: totalPrice
             },
-        })
+        });
     }
 }

@@ -15,7 +15,7 @@ export class Cart extends Model {
 
     @AllowNull(true)
     @Column({ type: DataType.JSONB })
-    @Field(() => [ItemInfoType], {nullable: true})
+    @Field(() => [ItemInfoType], { nullable: true })
     ItemInfo: ItemInfoType[];
 
     @AllowNull(true)
@@ -28,12 +28,12 @@ export class Cart extends Model {
 
     @AllowNull(true)
     @Column({ type: DataType.JSONB })
-    @Field(() => ContextInfoType, {nullable: true})
+    @Field(() => ContextInfoType, { nullable: true })
     contextInfo?: ContextInfoType;
 
     @AllowNull(true)
     @Column({ type: DataType.JSONB })
-    @Field(() => PriceType, {nullable: true})
+    @Field(() => PriceType, { nullable: true })
     price?: PriceType;
 
     @CreatedAt

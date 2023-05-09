@@ -5,14 +5,17 @@ import { ItemInfoType, ContextInfoType, PriceType } from 'src/invoice/item-info.
 import { DeviceEnum } from 'src/user/user.enum';
 
 @InputType()
-export class ContextInfoinput {
-    @Field(() => DeviceEnum, {nullable: true})
+export class ContextInfoInput {
+    @IsNotEmpty()
+    @Field(() => DeviceEnum, { nullable: false })
     device: DeviceEnum;
 
-    @Field({nullable: true})
+    @IsNotEmpty()
+    @Field({ nullable: false })
     ip: string;
 
-    @Field({nullable: true})
+    @IsNotEmpty()
+    @Field({ nullable: false })
     agent: string;
 }
 
@@ -20,15 +23,15 @@ export class ContextInfoinput {
 export class CreateCartInput {
 
     @IsOptional()
-    @Field(() => [ItemInfoInput], {nullable: true})
+    @Field(() => [ItemInfoInput], { nullable: true })
     ItemInfo: ItemInfoInput[];
 
     @IsOptional()
     @IsUUID('4')
-    @Field(() => ID,{nullable: true})
+    @Field(() => ID, { nullable: true })
     userId: string;
 
     @IsOptional()
-    @Field(() => ContextInfoinput, {nullable: true})
-    contextInfo?: ContextInfoinput;
+    @Field(() => ContextInfoInput, { nullable: true })
+    contextInfo?: ContextInfoInput;
 }
