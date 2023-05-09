@@ -23,8 +23,6 @@ const connectionOptions = {
 // Queue(queueName: string, url?: string, opts?: QueueOptions): Queue
 
 const queues = [
-  BullModule.registerQueue({ name: 'UserWeeklyPlaner' }),
-  BullModule.registerQueue({ name: 'UserGoal' }),
   BullModule.registerQueue({ name: 'mail-otp' }),
 ];
 
@@ -43,7 +41,7 @@ const queues = [
               return new IORedis(connectionOptions);
           }
         },
-        defaultJobOptions: { removeOnComplete: true, removeOnFail: true }
+        defaultJobOptions: { removeOnComplete: false, removeOnFail: false }
       })
     }),
     ...queues
