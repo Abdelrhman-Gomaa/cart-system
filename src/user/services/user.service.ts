@@ -77,14 +77,12 @@ export class UserService {
 
     }
 
-    async signIn(input: LoginUserInput): Promise<{ accessToken: string; }> {
+    async signIn(input: LoginUserInput) {
         const user = await this.validationUserPassword(input);
         if (!user) {
             throw new UnauthorizedException('Invalid Credentials');
         }
-        const payload: TokenPayload = { userId: user.id };
-        const accessToken = jwt.sign(payload, process.env.JWT_SECRET);
-        return { accessToken };
+        return this.appendAuthTokenToUser(user);
     }
 
     async changePassword(currentUser: string, input: ChangePasswordInput) {
@@ -153,15 +151,10 @@ export class UserService {
     }
 
     private async validationUserPassword(input: LoginUserInput) {
-        const user = await this.userRepo.findOne({ where: { email: input.email } });
+        const user = await this.userRepo.findOne({ where: { verifiedEmail: input.email } });
         if (user) {
             await this.matchPassword(input.password, user.password);
-            const userValidate = {
-                id: user.id,
-                email: user.verifiedEmail,
-                password: user.password
-            };
-            return userValidate;
+            return user;
         } else {
             return null;
         }
