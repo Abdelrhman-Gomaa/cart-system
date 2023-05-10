@@ -16,7 +16,7 @@ export class Cart extends Model {
     @AllowNull(true)
     @Column({ type: DataType.JSONB })
     @Field(() => [ItemInfoType], { nullable: true })
-    ItemInfo: ItemInfoType[];
+    itemInfo: ItemInfoType[];
 
     @AllowNull(true)
     @ForeignKey(() => User)

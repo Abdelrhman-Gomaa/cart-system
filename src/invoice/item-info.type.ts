@@ -1,5 +1,5 @@
 import { Field, ObjectType } from '@nestjs/graphql';
-import { ApiProperty } from '@nestjs/swagger';
+import { Min } from 'class-validator';
 import { DeviceEnum } from 'src/user/user.enum';
 
 @ObjectType()
@@ -11,6 +11,7 @@ export class ItemInfoType {
     title: string;
 
     @Field()
+    @Min(1)
     quantity: number;
 
     @Field()
