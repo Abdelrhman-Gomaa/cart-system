@@ -22,14 +22,20 @@ export class ContextInfoInput {
 @InputType()
 export class CreateCartInput {
 
-    @IsOptional()
-    @Field(() => [ItemInfoInput], { nullable: true })
-    ItemInfo: ItemInfoInput[];
-
-    @IsOptional()
+    @Field()
+    @IsNotEmpty()
     @IsUUID('4')
-    @Field(() => ID, { nullable: true })
-    userId: string;
+    productId: string;
+
+    @Field()
+    @IsNotEmpty()
+    @IsNumber()
+    quantity: number;
+
+    // @IsOptional()
+    // @IsUUID('4')
+    // @Field(() => ID, { nullable: true })
+    // userId: string;
 
     @IsOptional()
     @Field(() => ContextInfoInput, { nullable: true })

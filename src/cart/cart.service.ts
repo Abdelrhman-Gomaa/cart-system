@@ -7,6 +7,7 @@ import { BaseHttpException } from 'src/_common/exceptions/base-http-exception';
 import { ErrorCodeEnum } from 'src/_common/exceptions/error-code.enum';
 import { Product } from 'src/product/models/product.model';
 import { UpdateCartItemsInput } from './input/update-cart-items.input';
+import { ItemInfoType } from 'src/invoice/item-info.type';
 
 @Injectable()
 export class CartService {
@@ -19,39 +20,47 @@ export class CartService {
         private readonly itemRepo: typeof Product,
     ) { }
 
-    async createCart(input: CreateCartInput) {
-        if (!input.userId && !input.contextInfo)
+    async addItemToCart(input: UpdateCartItemsInput, currentUser?: string) {
+        let existingCart;
+        if (currentUser)
+            existingCart = await this.cartRepo.findOne({ where: { userId: currentUser } });
+        else if (input.contextInfo && !currentUser)
+            existingCart = await this.cartRepo.findOne({ where: { contextInfo: input.contextInfo, userId: null } });
+        if (existingCart) {
+            if (!input.cartId)
+                input.cartId = existingCart.id;
+            return await this.updateCartItems(input, currentUser); 
+        } else return await this.createCart(input, currentUser);
+    }
+
+    private async createCart(input: CreateCartInput, currentUser?: string) {
+        if (!currentUser && !input.contextInfo)
             throw new BaseHttpException(ErrorCodeEnum.CANNOT_CREATE_CART_WITHOUT_CONTEXT_OR_USER);
-        if (input.userId) await this.existingUserCart(input.userId);
-        if (input.contextInfo) await this.existingContextCart(input.contextInfo, input.userId);
-        let productIds = [];
-        if (input.ItemInfo)
-            productIds = input?.ItemInfo.map(product => product.productId);
-        const existingProducts = await this.itemRepo.findAll({ where: { id: productIds } });
-        if (!existingProducts) throw new BaseHttpException(ErrorCodeEnum.INVALID_PRODUCT);
-        let itemMapping = existingProducts?.map(product => {
-            return input?.ItemInfo.map(prod => {
-                if (product.id === prod.productId)
-                    return {
-                        productId: product.id,
-                        title: product.title,
-                        quantity: prod.quantity,
-                        totalUnitPrice: (prod.quantity * product.price)
-                    };
-            });
-        });
-        let itemInformation = [];
-        itemMapping?.map(item => item.map(prod => prod != undefined ? itemInformation.push(prod) : 0));
-        let price = this.calcTotalPrice(itemInformation);
+        if (currentUser) await this.existingUserCart(currentUser);
+        if (input.contextInfo) await this.existingContextCart(input.contextInfo, currentUser);
+
+        const existingProduct = await this.itemRepo.findOne({ where: { id: input.productId } });
+        let existingItem = [];
+        if (!existingProduct) throw new BaseHttpException(ErrorCodeEnum.INVALID_PRODUCT);
+        else {
+            const item = {
+                productId: existingProduct.id,
+                title: existingProduct.title,
+                quantity: input.quantity,
+                totalUnitPrice: (input.quantity * existingProduct.price)
+            };
+            existingItem.push(item);
+        }
+        let price = this.calcTotalPrice(existingItem);
         return await this.cartRepo.create({
             ...input,
-            ItemInfo: itemInformation,
-            userId: input?.userId,
+            ItemInfo: existingItem,
+            userId: currentUser,
             price
         });
     }
 
-    async updateCartItems(input: UpdateCartItemsInput, currentUser?: string) {
+    private async updateCartItems(input: UpdateCartItemsInput, currentUser?: string) {
         const existingCart = await this.cartRepo.findOne({ where: { id: input.cartId, } });
         if (currentUser && existingCart.userId !== currentUser)
             throw new BaseHttpException(ErrorCodeEnum.INVALID_USER_CART);
@@ -83,9 +92,7 @@ export class CartService {
             };
             existingItem.push(item);
         }
-
         let price = this.calcTotalPrice(existingItem);
-
         await this.cartRepo.update({ ItemInfo: existingItem, price }, { where: { id: input.cartId } });
         return await this.cartRepo.findOne({ where: { id: input.cartId } });
     }

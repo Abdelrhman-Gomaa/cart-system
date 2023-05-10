@@ -4,10 +4,10 @@ import { ContextInfoInput } from './create-cart.input';
 
 @InputType()
 export class UpdateCartItemsInput {
-    @Field()
-    @IsNotEmpty()
+    @Field({ nullable: true })
+    @IsOptional()
     @IsUUID('4')
-    cartId: string;
+    cartId?: string;
 
     @Field()
     @IsNotEmpty()

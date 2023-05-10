@@ -14,16 +14,10 @@ export class CartResolver {
     ) { }
 
     @Mutation(() => Cart)
-    async createCart(@Args('input') input: CreateCartInput) {
-        return await this.cartService.createCart(input);
-    }
-
-    // @UseGuards(AuthGuard)
-    @Mutation(() => Cart)
-    async updateCartItems(
+    async addItemToCart(
         @Args('input') input: UpdateCartItemsInput,
-        @CurrentUser('id') currentUser: string
+        @CurrentUser('id') currentUser?: string
     ) {
-        return await this.cartService.updateCartItems(input, currentUser);
+        return await this.cartService.addItemToCart(input, currentUser);
     }
 }
