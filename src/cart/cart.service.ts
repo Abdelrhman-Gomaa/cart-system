@@ -21,6 +21,27 @@ export class CartService {
         private readonly itemRepo: typeof Product,
     ) { }
 
+    async mergeCarts(input: FindCartByContextInput, currentUser: string) {
+        const contextCart = await this.cartRepo.findOne({ where: { contextInfo: input.contextInfo, userId: null } });
+        if (!contextCart) throw new BaseHttpException(ErrorCodeEnum.INVALID_CONTEXT_CART);
+        const userCart = await this.cartRepo.findOne({ where: { userId: currentUser } });
+        if (!userCart) throw new BaseHttpException(ErrorCodeEnum.INVALID_USER_CART);
+
+        console.log('contextCart >>>>>>>>>>>>>>>>>>>>>>>>>>>>', contextCart.id);
+        console.log('userCart >>>>>>>>>>>>>>>>>>>>>>>>>>>>', userCart.id);
+
+        let contextCartItems = contextCart.itemInfo;
+        let userCartItems = userCart.itemInfo;
+
+        let contextCartItemsIds = contextCartItems.map(item => item.productId);
+        let userCartItemsIds = userCartItems.map(item => item.productId);
+
+        console.log('contextCartItemsIds >>>>>>>>>>>>>>>>>>>>>>>>>>>>', contextCartItemsIds);
+        console.log('userCartItemsIds >>>>>>>>>>>>>>>>>>>>>>>>>>>>', userCartItemsIds);
+
+        return true;
+    }
+
     async getCart(input: FindCartByContextInput, currentUser?: string) {
         if (!input.contextInfo && !currentUser) throw new BaseHttpException(ErrorCodeEnum.ENTERED_CONTEXT_OR_USER);
         if (currentUser) {
