@@ -3,9 +3,11 @@ import { Args, Mutation, Query, Resolver } from "@nestjs/graphql";
 import { Cart } from "./model/cart.model";
 import { CartService } from "./cart.service";
 import { CreateCartInput } from "./input/create-cart.input";
-import { UpdateCartItemsInput, UpdateItemsQuantityInput } from './input/update-cart-items.input';
+import { UpdateCartItemsInput } from './input/update-cart-items.input';
 import { CurrentUser } from 'src/auth/auth-user.decorator';
 import { AuthGuard } from 'src/auth/auth.guard';
+import { UpdateItemsQuantityInput } from './input/update-item-quantity.input';
+import { FindCartByContextInput } from './input/find-cart.input';
 
 @Resolver(Cart)
 export class CartResolver {
@@ -33,5 +35,13 @@ export class CartResolver {
         @Args('input') input: UpdateItemsQuantityInput
     ) {
         return await this.cartService.updateItemQuantity(input, -1);
+    }
+
+    @Query(() => Cart)
+    async getCart(
+        @Args('input') input: FindCartByContextInput,
+        @CurrentUser('id') currentUser?: string
+    ) {
+        return await this.cartService.getCart(input, currentUser);
     }
 }

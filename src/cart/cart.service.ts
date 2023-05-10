@@ -6,8 +6,9 @@ import { User } from 'src/user/models/user.model';
 import { BaseHttpException } from 'src/_common/exceptions/base-http-exception';
 import { ErrorCodeEnum } from 'src/_common/exceptions/error-code.enum';
 import { Product } from 'src/product/models/product.model';
-import { UpdateCartItemsInput, UpdateItemsQuantityInput } from './input/update-cart-items.input';
-import { ItemInfoType } from 'src/invoice/item-info.type';
+import { UpdateCartItemsInput } from './input/update-cart-items.input';
+import { UpdateItemsQuantityInput } from './input/update-item-quantity.input';
+import { FindCartByContextInput } from './input/find-cart.input';
 
 @Injectable()
 export class CartService {
@@ -19,6 +20,19 @@ export class CartService {
         @Inject(Repositories.ProductsRepository)
         private readonly itemRepo: typeof Product,
     ) { }
+
+    async getCart(input: FindCartByContextInput, currentUser?: string) {
+        if (!input.contextInfo && !currentUser) throw new BaseHttpException(ErrorCodeEnum.ENTERED_CONTEXT_OR_USER);
+        if (currentUser) {
+            const cart = await this.cartRepo.findOne({ where: { userId: currentUser } });
+            if (!cart) throw new BaseHttpException(ErrorCodeEnum.INVALID_USER_CART);
+            return cart;
+        } else if (input.contextInfo && !currentUser) {
+            const cart = await this.cartRepo.findOne({ where: { contextInfo: input.contextInfo, userId: null } });
+            if (!cart) throw new BaseHttpException(ErrorCodeEnum.INVALID_CONTEXT_CART);
+            return cart;
+        }
+    }
 
     async addItemToCart(input: UpdateCartItemsInput, currentUser?: string) {
         let existingCart;
