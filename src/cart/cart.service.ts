@@ -53,9 +53,14 @@ export class CartService {
 
     async updateCartItems(input: UpdateCartItemsInput, currentUser?: string) {
         const existingCart = await this.cartRepo.findOne({ where: { id: input.cartId, } });
-        if (input.userId && existingCart.userId !== input.userId)
+        if (currentUser && existingCart.userId !== currentUser)
             throw new BaseHttpException(ErrorCodeEnum.INVALID_USER_CART);
-        if (!input.userId && existingCart.contextInfo !== input.contextInfo)
+        if (
+            !currentUser &&
+            existingCart.contextInfo.agent !== input.contextInfo.agent &&
+            existingCart.contextInfo.device !== input.contextInfo.device &&
+            existingCart.contextInfo.ip !== input.contextInfo.ip
+        )
             throw new BaseHttpException(ErrorCodeEnum.INVALID_CONTEXT_CART);
 
         let existingItem = existingCart.ItemInfo;

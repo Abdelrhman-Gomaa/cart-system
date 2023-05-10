@@ -10,11 +10,6 @@ export class UpdateCartItemsInput {
     cartId: string;
 
     @Field()
-    @IsOptional()
-    @IsUUID('4')
-    userId: string;
-
-    @Field()
     @IsNotEmpty()
     @IsUUID('4')
     productId: string;
