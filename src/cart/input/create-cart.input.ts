@@ -1,4 +1,4 @@
-import { IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID, Min } from 'class-validator';
 import { Field, ID, InputType } from '@nestjs/graphql';
 import { ItemInfoInput } from 'src/invoice/input/create-invoice.input';
 import { ItemInfoType, ContextInfoType, PriceType } from 'src/invoice/item-info.type';
@@ -30,13 +30,9 @@ export class CreateCartInput {
     @Field()
     @IsNotEmpty()
     @IsNumber()
+    @Min(1)
     quantity: number;
-
-    // @IsOptional()
-    // @IsUUID('4')
-    // @Field(() => ID, { nullable: true })
-    // userId: string;
-
+    
     @IsOptional()
     @Field(() => ContextInfoInput, { nullable: true })
     contextInfo?: ContextInfoInput;

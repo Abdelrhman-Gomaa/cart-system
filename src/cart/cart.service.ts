@@ -6,7 +6,7 @@ import { User } from 'src/user/models/user.model';
 import { BaseHttpException } from 'src/_common/exceptions/base-http-exception';
 import { ErrorCodeEnum } from 'src/_common/exceptions/error-code.enum';
 import { Product } from 'src/product/models/product.model';
-import { UpdateCartItemsInput } from './input/update-cart-items.input';
+import { UpdateCartItemsInput, UpdateItemsQuantityInput } from './input/update-cart-items.input';
 import { ItemInfoType } from 'src/invoice/item-info.type';
 
 @Injectable()
@@ -29,8 +29,32 @@ export class CartService {
         if (existingCart) {
             if (!input.cartId)
                 input.cartId = existingCart.id;
-            return await this.updateCartItems(input, currentUser); 
+            return await this.updateCartItems(input, currentUser);
         } else return await this.createCart(input, currentUser);
+    }
+
+    async updateItemQuantity(input: UpdateItemsQuantityInput, num: number) {
+        const existingCart = await this.cartRepo.findOne({ where: { id: input.cartId } });
+        if (!existingCart) throw new BaseHttpException(ErrorCodeEnum.INVALID_CART);
+        let itemInfo = existingCart.itemInfo.map(item => {
+            let price = item.totalUnitPrice / item.quantity;
+            if (item.productId === input.productId) {
+                item.quantity = input.quantity || item.quantity + num;
+            }
+            return {
+                productId: item.productId,
+                title: item.title,
+                quantity: item.quantity,
+                totalUnitPrice: item.quantity * price
+            };
+        });
+        let finalItem = [];
+        itemInfo.map(item => {
+            if (item.quantity > 0) finalItem.push(item);
+        });
+        let price = this.calcTotalPrice(finalItem);
+        await this.cartRepo.update({ itemInfo: finalItem, price }, { where: { id: existingCart.id } });
+        return await this.cartRepo.findOne({ where: { id: input.cartId } });
     }
 
     private async createCart(input: CreateCartInput, currentUser?: string) {
@@ -72,7 +96,7 @@ export class CartService {
         )
             throw new BaseHttpException(ErrorCodeEnum.INVALID_CONTEXT_CART);
 
-        let existingItem = existingCart.ItemInfo;
+        let existingItem = existingCart.itemInfo;
         let newItemId = input.productId;
         existingItem.map(item => {
             let price = item.totalUnitPrice / item.quantity;
@@ -128,4 +152,4 @@ export class CartService {
             finalPrice: totalPrice
         };
     }
-}
+} 
