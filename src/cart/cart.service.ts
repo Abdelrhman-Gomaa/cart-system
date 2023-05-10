@@ -29,7 +29,7 @@ export class CartService {
             return cart;
         } else if (input.contextInfo && !currentUser) {
             const cart = await this.cartRepo.findOne({ where: { contextInfo: input.contextInfo, userId: null } });
-            if (!cart) throw new BaseHttpException(ErrorCodeEnum.INVALID_CONTEXT_CART);
+            if (!cart) throw new BaseHttpException(ErrorCodeEnum.DEVICE_HAS_ONE_CART);
             return cart;
         }
     }
@@ -75,7 +75,7 @@ export class CartService {
         if (!currentUser && !input.contextInfo)
             throw new BaseHttpException(ErrorCodeEnum.CANNOT_CREATE_CART_WITHOUT_CONTEXT_OR_USER);
         if (currentUser) await this.existingUserCart(currentUser);
-        if (input.contextInfo) await this.existingContextCart(input.contextInfo, currentUser);
+        else if (input.contextInfo && !currentUser) await this.existingContextCart(input.contextInfo);
 
         const existingProduct = await this.itemRepo.findOne({ where: { id: input.productId } });
         let existingItem = [];
@@ -142,18 +142,11 @@ export class CartService {
         if (cart) throw new BaseHttpException(ErrorCodeEnum.USER_CANNOT_CREATE_MORE_THAN_ONE_CART);
     }
 
-    private async existingContextCart(contextInfo: ContextInfoInput, userId: string) {
+    private async existingContextCart(contextInfo: ContextInfoInput) {
         if (!contextInfo.agent || !contextInfo.device || !contextInfo.ip)
             throw new BaseHttpException(ErrorCodeEnum.MUST_ENTERED_ALL_CONTEXT_INFO);
-        const cart = await this.cartRepo.findAll({ where: { contextInfo: contextInfo } });
-        cart.map(item => {
-            if (item) {
-                if (userId && item.userId === userId)
-                    throw new BaseHttpException(ErrorCodeEnum.USER_CANNOT_CREATE_MORE_THAN_ONE_CART);
-                if (!userId && !item.userId)
-                    throw new BaseHttpException(ErrorCodeEnum.DEVICE_HAS_ONE_CART);
-            }
-        });
+        const cart = await this.cartRepo.findOne({ where: { contextInfo, userId: null } });
+        if (cart) throw new BaseHttpException(ErrorCodeEnum.DEVICE_HAS_ONE_CART);
     }
 
     private calcTotalPrice(itemInformation: any) {
