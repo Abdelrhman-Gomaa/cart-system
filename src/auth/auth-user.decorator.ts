@@ -1,6 +1,4 @@
-import * as jwt from 'jsonwebtoken';
-import { ExecutionContext, UnauthorizedException, createParamDecorator } from '@nestjs/common';
-import { TokenPayload } from './auth-token-payload.interface';
+import { ExecutionContext, createParamDecorator } from '@nestjs/common';
 import { GqlExecutionContext } from '@nestjs/graphql';
 
 export const CurrentUser = createParamDecorator((fieldName, ctx: ExecutionContext) => {
