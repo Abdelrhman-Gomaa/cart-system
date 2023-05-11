@@ -10,6 +10,7 @@ export class AuthGuard implements CanActivate {
     ) { }
     async canActivate(context: ExecutionContext): Promise<boolean> {
         const ctx = GqlExecutionContext.create(context);
+        console.log('>>>>>>>>>>>>>>>>', ctx);
         const { currentUser } = ctx.getContext() as GqlContext;
         if (!currentUser) throw new BaseHttpException(ErrorCodeEnum.UNAUTHORIZED);
         return true;

@@ -23,23 +23,39 @@ export class CartService {
 
     async mergeCarts(input: FindCartByContextInput, currentUser: string) {
         const contextCart = await this.cartRepo.findOne({ where: { contextInfo: input.contextInfo, userId: null } });
-        if (!contextCart) throw new BaseHttpException(ErrorCodeEnum.INVALID_CONTEXT_CART);
         const userCart = await this.cartRepo.findOne({ where: { userId: currentUser } });
-        if (!userCart) throw new BaseHttpException(ErrorCodeEnum.INVALID_USER_CART);
+        if (contextCart && userCart) {
+            let contextCartItems = contextCart.itemInfo;
+            let userCartItems = userCart.itemInfo;
+            let cartItem = [];
+            if (contextCartItems.length > userCartItems.length) cartItem = await this.mergeCartItems(cartItem, contextCartItems, userCartItems);
+            else cartItem = await this.mergeCartItems(cartItem, userCartItems, contextCartItems);
+            let price = this.calcTotalPrice(cartItem);
+            await this.cartRepo.update({ itemInfo: cartItem, price, contextInfo: contextCart.contextInfo }, { where: { id: userCart.id } });
+            await this.cartRepo.destroy({ where: { id: contextCart.id } });
+            return await this.cartRepo.findOne({ where: { id: userCart.id } });
+        } else if (contextCart && !userCart) {
+            await this.cartRepo.update({ userId: currentUser }, { where: { id: contextCart.id } });
+            return await this.cartRepo.findOne({ where: { id: contextCart.id } });
+        } else if (!contextCart && userCart) return userCart;
+        else throw new BaseHttpException(ErrorCodeEnum.INVALID_CONTEXT_CART);
+    }
 
-        console.log('contextCart >>>>>>>>>>>>>>>>>>>>>>>>>>>>', contextCart.id);
-        console.log('userCart >>>>>>>>>>>>>>>>>>>>>>>>>>>>', userCart.id);
-
-        let contextCartItems = contextCart.itemInfo;
-        let userCartItems = userCart.itemInfo;
-
-        let contextCartItemsIds = contextCartItems.map(item => item.productId);
-        let userCartItemsIds = userCartItems.map(item => item.productId);
-
-        console.log('contextCartItemsIds >>>>>>>>>>>>>>>>>>>>>>>>>>>>', contextCartItemsIds);
-        console.log('userCartItemsIds >>>>>>>>>>>>>>>>>>>>>>>>>>>>', userCartItemsIds);
-
-        return true;
+    private mergeCartItems(finalCartItem, firstCartItem, secondCartItem) {
+        finalCartItem = firstCartItem;
+        finalCartItem.forEach(finalItem => {
+            secondCartItem.forEach(item => {
+                if (item.productId === finalItem.productId) {
+                    finalItem.quantity = finalItem.quantity + item.quantity;
+                    finalItem.totalUnitPrice = finalItem.totalUnitPrice + item.totalUnitPrice;
+                    secondCartItem.splice(secondCartItem.indexOf(item), 1);
+                }
+            });
+        });
+        secondCartItem.forEach(item => {
+            finalCartItem.push(item);
+        });
+        return finalCartItem;
     }
 
     async getCart(input: FindCartByContextInput, currentUser?: string) {

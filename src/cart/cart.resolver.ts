@@ -37,7 +37,7 @@ export class CartResolver {
         return await this.cartService.updateItemQuantity(input, -1);
     }
 
-    @Mutation(() => Boolean)
+    @Mutation(() => Cart)
     async mergeCarts(
         @Args('input') input: FindCartByContextInput,
         @CurrentUser('id') currentUser: string
